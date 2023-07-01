@@ -1,99 +1,109 @@
 from numpy import *
 from matplotlib.pyplot import *
-from scipy.integrate import quad
-from scipy.optimize import fsolve
 
 print("----- Task 1 -----\n")
 """
-Compute approximately the integral
-∫ π/2
-0
-sin(ωx)dx
-for ω = 2π.
-For this end run at the beginning of your program the import statement
-from scipy . integrate import quad
-The method to integrate a function f over an interval [a, b] is quad (quadrature is
-another word for integrate) and it is used as quad(f,a,b).
-It returns a tuple with the approximated solution and the estimated error. Check
-the help page of that function to see if it has some default arguments which you
-could set by other values.
+Complex valued functions
+(For this task you need knowledge from the following chapters of the course book:
+Ch. 2 (numeric types), Ch. 6 (Basic Plotting), Ch. 7 (Passing arguments, Return
+Values). The complex valued function f (ϕ, r) = r exp(iϕ) describes a circle with
+radius r in the complex plane, when r is kept fixed and ϕ varied between 0 and
+2π. Set up a function which evaluates f . Plot this function for a fixed value of
+r in the complex plane. (Note: The real part of a complex variable z is obtained
+by the command z.real and its imaginary part by z.imag. Recall also that the
+imaginary unit i is expressed in Python by 1j)
+Let then r vary from 0.1 to 1.0 and make a plot of the corresponding concentric
+circles
 """
+# imaginary number
+z = 1 + 1j
 
 
-def f(x, w):
-    return sin(w * x)
+def f(p, r):
+    return r * exp(p * 1j)
 
 
-integral = quad(f, 0, pi / 2, args=(2 * pi,))  # args gives the second argument w to f()
-print(integral)
+r_values = linspace(0.1, 1.0, 10)
+p_values = linspace(0, 2 * pi)
+
+figure(figsize=(6, 6))
+
+for r in r_values:
+    y_values = array([f(p, r) for p in p_values])
+
+    plot(y_values.real, y_values.imag, label=f'r={r:.1f}')
+
+xlabel('Real part')
+ylabel('Imaginary part')
+title('Concentric Circles in Complex Plane')
+legend()
+grid(True)
+axis('equal')  # to ensure the plot is not distorted
+show()
+
 
 print("\n----- Task 2 -----\n")
 """
-Compute the integral
-π/2
-∫ sin(ωx)dx
-0
-
-for 1000 equidistant values of ω in the interval [0, 2π]
-and plot the results versus ω.
-Label the axes and put a title to the plot
-"""
-
-w = linspace(0, 2 * pi, 1000)  # 1000 equidistant values
-x = linspace(0, pi / 2, 1000)
-
-integral_values = []
-for value in w:
-    integral = quad(f, 0, pi / 2, args=(value,))
-    integral_values.append(integral[0])  # appends the value, not the error
-
-plot(w, integral_values)
-xlabel('ω')
-ylabel('Integral value')
-title('Integral of sin(ωx) from 0 to π/2 for various ω')
-grid(True)
-show()
-
-print("\n----- Task 3 -----\n")
-"""
-Zeros of a function
-In a previous training exercise you wrote your own program to find a zero (noll-
-ställe) of a given function. Now we see how this can be done by a scipy method.
-For this end use first
-from scipy . optimize import fsolve
-The simplest use of the method is fsolve(f,x0) where f is the function of which
-a zero is calculated and x0 is a guess where you expect the zero.
-Compute the positive zero of the polynomial p(x) = x2 + x − 3 .
+Newton’s Method
+(For this task you need knowledge from Ch. 7 (Passing arguments, Return
+Values), Ch. 9 (Controlling the flow inside the loop) Newton’s method is an
+iterative process for finding a zero (root) of a given function f . It is defined
+as follows:
+xn+1 = xn − f (xn)/f ′(xn).
+The iteration is started with a given value x0 and it is ended when |xn+1 − xn|
+is less than a given tolerance TOL.
+Write a function newton which takes as arguments:
+1
+• f , the function whose zeroes we are looking for
+• f p, a function, which is the derivative of f
+• x0 (the start value)
+• Tol (the tolerance).
+The function should do at most 400 iterations. It is supposed to return the last
+obtained value xn+1 together with a variable conv, which tells if convergence was
+observed or not.
+Note that your function might produce error messages when the sequence diverges
+and the numbers grow out of the range of machine numbers. We will show in a
+forthcoming lecture how these error messages can be taken care of.
+Write a function myfunc which describes a mathematical function of your choice.
+You should know its derivative which you are supposed to code as myfuncp.
+Test Newton’s method on these functions.
+Plan your solution to this task first on paper. Discuss the approach with your
+neighbours and with the teaching assistants. Start programming first, when this
+sketch of your program was made.
 """
 
 
-def p(x):
-    return x ** 2 + x - 3
+def myfunc(x):  # example function
+    return x ** 4 + 20 * x + 1
 
 
-x0 = 1.5
-print(fsolve(p, x0))
+def myfuncp(x):  # derivative of myfunc
+    return 4 * x + 20
 
 
-print("\n----- Task 4 -----\n")
-"""
-Zeros of a parameter dependent function
-Plot the positive zeros of the polynomials p(x) = ax2 + x − 3 for a ∈ [1, 5] versus
-a.
-Do the zeros depend linearly on a?
-"""
-a = linspace(1, 5)
-x0 = 1
+def newton(f, fp, x0, tol, i):
 
-def p(x, a):
-    return (a * x ** 2) + x - 3
+    x = x0 - (f(x0) / fp(x0))
+    i += 1
+
+    if abs(x - x0) < tol:
+        conv = True
+        return x, conv, i
+
+    elif i >= 400:
+        conv = False
+        return x, conv, i
+
+    else:
+        return newton(f, fp, x, tol, i)
 
 
-zero_values = [fsolve(p, x0, args=(value,)) for value in a]     # using list comprehension
+x0 = -10
+i = 0.01
+tol = 0.1
+final_x, conv, iterations = newton(myfunc, myfuncp, 1, tol, i)
 
-plot(a, zero_values)
-xlabel('a')
-ylabel('Zero values')
-title('Positive zeros of ax2 + x − 3 versus a')
-grid(True)
-show()
+if conv:
+    print(f"Root was found at {final_x} after {iterations} iterations")
+else:
+    print(f"Final x (n+1) was at {final_x} after {iterations} iterations")
