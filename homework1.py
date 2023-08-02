@@ -26,12 +26,12 @@ def approx_ln(x, n):
         return g
 
     for i in range(n):
-        #print(f"Updating for the {i} time")
+        # print(f"Updating for the {i} time")
         a = update_a(a, g)
         g = update_g(a, g)
 
     # approximate ln(x)
-    #print(f"Approximate for ln(x) = {(x - 1) / a}")
+    # print(f"Approximate for ln(x) = {(x - 1) / a}")
     return (x - 1) / a
 
 

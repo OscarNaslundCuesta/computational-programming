@@ -1,3 +1,10 @@
+"""
+NUMA01: Computational Programming with Python
+Homework 2
+Authors: Oscar Näslund Cuesta, Levi Tuoremaa
+Date: 2023-07-06
+"""
+
 import numpy as np
 from matplotlib.pyplot import *
 
@@ -25,7 +32,7 @@ class Interval:
 
     def __repr__(self):
         """
-        Returns the interval
+        Returns the interval as a string
         :return:
         """
         return f"{self.interval_array}"
@@ -176,6 +183,11 @@ class Interval:
         return Interval(-self.interval_array[1], -self.interval_array[0])
 
     def __pow__(self, int):
+        """
+        Power function
+        :param int:
+        :return:
+        """
         if int % 2 == 0:
             if self.interval_array[0] >= 0:
                 return Interval(self.interval_array[0] ** int, self.interval_array[1] ** int)
