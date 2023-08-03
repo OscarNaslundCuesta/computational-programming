@@ -1,6 +1,6 @@
 """
 NUMA01: Computational Programming with Python
-Final Project: Sparse Matrices (1st Draft)
+Final Project: Sparse Matrices (2nd Draft)
 Authors:
 Date: 2023-07-17
 """
@@ -21,22 +21,25 @@ class SparseMatrix:
         # Initialize arrays for storing matrix in CSR form
         self.values = []
         self.col_index = []
-        self.row_index = []
+        self.row_index = [0]  #
+        self.number_of_nonzero = 0  # total count of nonzero for the matrix
+        self.intern_represent = "CSR"
+        self.transposed_matrix = None  # used in CSC
 
-        indices = np.nonzero(self.matrix)
-
-        for x, y in zip(*indices):
-            self.values.append(self.matrix[x, y])  # get value at the index
-            self.col_index.append(y)
-            self.row_index.append(x)
+        for row in self.matrix:
+            nonzero_count = 0  # the count for the current row
+            for i, value in enumerate(row):  # i = col_index
+                if value != 0:
+                    self.values.append(value)
+                    self.col_index.append(i)
+                    nonzero_count += 1
+            self.number_of_nonzero += nonzero_count  # total count of nonzero
+            self.row_index.append(self.row_index[-1] + nonzero_count)  #
 
         # Convert to numpy arrays (not sure if needed)
         self.values = np.array(self.values)
         self.col_index = np.array(self.col_index)
         self.row_index = np.array(self.row_index)
-
-        self.intern_represent = "CSR"
-        self.number_of_nonzero = np.count_nonzero(self.matrix)  # built-in function to count all nonzero elements
 
     def set_element(self, i, j, aij):
         """
@@ -57,21 +60,34 @@ class SparseMatrix:
         # Set the new value
         self.matrix[i, j] = aij
 
+    def csr_to_csc(self):
+        """
+        Converts matrix to CSC-form
+        :return:
+        """
+        # self.transposed_matrix = self.matrix.T  # transposes the matrix
+        # self.values = []
+        # self.col_index = []
+        # self.row_index = [0]
+        self.intern_represent = "CSC"
+
 
 # Example matrix from wikipedia
 example_matrix = np.array([
-    [5, 0, 0, 0],
-    [0, 8, 0, 0],
-    [0, 0, 3, 0],
-    [0, 6, 0, 0]
+    [10, 20, 0, 0, 0, 0],
+    [0, 30, 0, 40, 0, 0],
+    [0, 0, 50, 60, 70, 0],
+    [0, 0, 0, 0, 0, 80]
 ])
-
-print(example_matrix)
 
 example = SparseMatrix(example_matrix)
 
+print("example.matrix:")
+print(example.matrix)
 print("values = ", example.values)
 print("col_index = ", example.col_index)
 print("row_index = ", example.row_index)
 print("intern_represent = ", example.intern_represent)
 print("number_of_nonzero = ", example.number_of_nonzero)
+
+print("\n" + "CSC-array:")
