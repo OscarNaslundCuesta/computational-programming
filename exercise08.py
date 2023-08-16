@@ -93,6 +93,78 @@ class ComplexNumber:
     def __radd__(self, other):
         return self + other
 
+    def __sub__(self, other):
+        if isinstance(other, (int, float)):
+            real_sum = self.real - other
+            imag_sum = self.imag
+
+        elif isinstance(other, ComplexNumber):
+            real_sum = self.real - other.real
+            imag_sum = self.imag - other.imag
+
+        else:
+            raise ValueError("Cannot add ComplexNumber with an unsupported type.")
+
+        return ComplexNumber(real_sum, imag_sum)
+
+    def __rsub__(self, other):
+        if isinstance(other, (int, float)):
+            real_sum = other - self.real
+            imag_sum = self.imag
+
+        elif isinstance(other, ComplexNumber):
+            real_sum = other.real - self.real
+            imag_sum = other.imag - self.imag
+
+        else:
+            raise ValueError("Cannot add ComplexNumber with an unsupported type.")
+
+        return ComplexNumber(real_sum, imag_sum)
+
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            real_sum = other * self.real
+            imag_sum = other * self.imag
+
+        elif isinstance(other, ComplexNumber):
+            real_sum = other.real * self.real + other.imag * self.imag * -1
+            imag_sum = other.real * self.imag + other.imag * self.real
+
+        else:
+            raise ValueError("Cannot add ComplexNumber with an unsupported type.")
+
+        return ComplexNumber(real_sum, imag_sum)
+
+    def __rmul__(self, other):
+        return self * other
+
+    def __truediv__(self, other):
+        if isinstance(other, (int, float)):
+            real_sum = self.real / other
+            imag_sum = self.imag / other
+
+        elif isinstance(other, ComplexNumber):  # dunno
+            #real_sum = other.real * self.real + other.imag * self.imag * -1
+            #imag_sum = other.real * self.imag + other.imag * self.real
+            pass
+
+        else:
+            raise ValueError("Cannot add ComplexNumber with an unsupported type.")
+
+        return ComplexNumber(real_sum, imag_sum)
+
+    def __pow__(self, power):
+
+        def recursive_pow(current_val, original_val, i):
+            i -= 1
+            if i == 0:
+                return current_val
+            current_val = current_val * original_val
+
+            return recursive_pow(current_val, original_val, i)
+
+        return recursive_pow(self, self, power)
+
 
 first = ComplexNumber(1, 1)
 second = 1 + 1j
@@ -100,5 +172,20 @@ print(second == first)
 
 c1 = ComplexNumber(3, 4)
 
-c4 = 2.5 + c1
-print(c4)
+c2 = 2.5 + c1
+print(c2)
+
+c3 = c1 - 2.5
+print("c3 = ", c3)
+
+c4 = 2.5 - c3
+print("c4 = ", c4)
+
+c5 = c3 * c4
+print("c5 = ", c5)
+
+c6 = c4 ** 3
+print("c6 = ", c6)
+
+c7 = c4 / 2
+print("c7 = ", c7)
