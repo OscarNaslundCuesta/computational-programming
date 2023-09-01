@@ -2,12 +2,11 @@
 NUMA01: Computational Programming with Python
 Final Project: Sparse Matrices (Draft)
 Authors:
-Date: 2023-08-08
+Date: 2023-07-17
 """
 import numpy as np
 from scipy.sparse import csr_matrix, csc_matrix, lil_matrix
 import time
-
 
 class SparseMatrix:
     def __init__(self, input_matrix, tol=10 ** -8):
@@ -24,12 +23,12 @@ class SparseMatrix:
         # Task 6, removing any value lower than tol and replacing with 0
         for i in range(len(self.matrix[0])):
             for j in range(len(self.matrix)):
-                if abs(self.matrix[j][i]) == 0:
+                if abs(self.matrix[j,i]) == 0:
 
                     pass
                 else:
-                    if abs(self.matrix[j][i]) < tol:
-                        self.matrix[j][i] = 0
+                    if abs(self.matrix[j,i]) < tol:
+                        self.matrix[j,i] = 0
 
         # Initialize arrays for storing matrix in CSR form
         self.values = []
@@ -132,26 +131,38 @@ class SparseMatrix:
     def csr_to_csc(self):
         """
         Converts matrix to CSC-form
-        :return:
         """
         if self.intern_represent == "CSC":
             return
 
-        self.values = []
-        self.col_index = []
-        self.row_index = []
+        values_csc = []  # Stores non-zero values in CSC format
+        row_index_csc = []  # Stores row indices in CSC format
+        col_index_csc = [0] # Stores column indices in CSC format
 
-        for i in range(len(self.matrix[0])):
-            for j in range(len(self.matrix)):
-                if self.matrix[j][i] != 0:
-                    self.values.append(self.matrix[j][i])
-                    self.row_index.append(j)
-                    self.col_index.append(i)
+        for col in range(len(self.matrix[0])):
+            if np.count_nonzero(self.col_index==col) > 0:
+                col_index_csc.append(col_index_csc[-1] + np.count_nonzero(self.col_index==col))
+                place_of_value=np.where(self.col_index==(col))[0]
+                for i in range(np.count_nonzero(self.col_index==col)):
+                    values_csc.append(self.values[place_of_value[i]])
+            else:
+                col_index_csc.append(col_index_csc[-1])
 
-        self.values = np.array(self.values)
-        self.col_index = np.array(self.col_index)
-        self.row_index = np.array(self.row_index)
-
+        rows_with_values=[]
+        for row in range(len(self.matrix)):
+                if self.row_index[row+1]-self.row_index[row]>0:
+                    for i in range(self.row_index[row+1]-self.row_index[row]):
+                        rows_with_values.append(row)
+        
+        for col in range(len(self.matrix[0])):
+            for i in range(col_index_csc[col+1]-col_index_csc[col]):
+                place_of_value=np.where(self.col_index==col)[0][i]
+                row_index_csc.append(rows_with_values[place_of_value])
+                
+        self.values = np.array(values_csc)
+        self.col_index = np.array(col_index_csc)
+        self.row_index = np.array(row_index_csc)        
+        
         self.intern_represent = "CSC"
 
     # Task 5, checking if two csc matrices is exactly equal
@@ -173,76 +184,69 @@ class SparseMatrix:
         else:
             return False
         return True
-
-    # Task 7
+    
+    #Task 7
     def elementwise_add(self, other_matrix):
-        if not isinstance(other_matrix, SparseMatrix):  # checks that other matrix is a sparsematrix object
+        """
+        Add element to matrix
+        :param other_matrix:
+        """
+        if not isinstance(other_matrix, SparseMatrix): #checks that other matrix is a sparsematrix object
             raise ValueError('Input has to be a SparseMatrix object')
-
-        if self.matrix.shape == other_matrix.matrix.shape:  # checks that both matrices have the same shape
-
+            
+        if self.matrix.shape == other_matrix.matrix.shape: #checks that both matrices have the same shape
+            
             sum_matrix = self.matrix + other_matrix.matrix
         else:
             raise ValueError('Matrices must be same shape')
-
+        
         return SparseMatrix(sum_matrix)
-
-    # Task 8
+    
+    
+    #Task 8
     def vector_multiplication(self, vector):
-
+        
         if vector.ndim != 1:
             raise ValueError('Dimension of vector must be one')
-
+            
         if not isinstance(vector, np.ndarray):
             raise ValueError('Vector musy be numpy array')
-
+        
         if vector.shape[0] != self.matrix.shape[1]:
             raise ValueError('Vector length and number of matrix columns must match')
-
+            
         result = np.zeros(self.matrix.shape[0])
-
-        for i in range(self.matrix.shape[0]):  # iterate through rows
-            start_index = self.row_index[i]  # index of first nonzero element in row i
-            end_index = self.row_index[
-                i + 1]  # starting index of nonzero element in next row, correpsonds to ending index of nonzero element in row i
-            nonzero_col_indices = self.col_index[
-                                  start_index:end_index]  # extracts column indeces in col_index corresponding to nonzero elements in row i
-            values = self.values[start_index:end_index]  #
+    
+        for i in range(self.matrix.shape[0]):     #iterate through rows
+            start_index = self.row_index[i]       #index of first nonzero element in row i
+            end_index = self.row_index[i + 1]     #starting index of nonzero element in next row, correpsonds to ending index of nonzero element in row i 
+            nonzero_col_indices = self.col_index[start_index:end_index] #extracts column indeces in col_index corresponding to nonzero elements in row i
+            values = self.values[start_index:end_index]             #
             result[i] = np.sum(values * vector[nonzero_col_indices])
-
+    
         return result
+        
+        
+            
 
 
 # Example matrix from wikipedia
 example_matrix = np.array([
-    [10, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 30, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 50, 60, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 90, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 110, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 120, 0, 0, 0, 0, 0],
-    [0, 130, 0, 0, 0, 0, 0, 0, 0, 0, 140, 0, 0, 0, 0],
-    [150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 180, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 190],
-    [200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    [10, 20, 0, 0, 0, 0],
+    [0, 30, 0, 40, 0, 0],
+    [0, 0, 50, 60, 70, 0],
+    [0, 0, 0, 0, 0, 80]
 ])
 
 # Task 9
-zeros = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+zeros=np.array([0, 0, 0, 0, 0, 0])
 for i in range(10000):
     array_before = example_matrix[:2]
     array_after = example_matrix[2:]
     result_array = np.concatenate((array_before, [zeros], array_after))
-    example_matrix = result_array
+    example_matrix=result_array
 
 example = SparseMatrix(example_matrix)
-
-# example.set_element(0,2,25)
 
 print("example.matrix:")
 print(example.matrix)
@@ -262,167 +266,111 @@ print("intern_represent = ", example.intern_represent)
 print("number_of_nonzero = ", example.number_of_nonzero)
 
 example_matrix1 = np.array([
-    [10, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 30, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 50, 60, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 90, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 110, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 120, 0, 0, 0, 0, 0],
-    [0, 130, 0, 0, 0, 0, 0, 0, 0, 0, 140, 0, 0, 0, 0],
-    [150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 180, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 190],
-    [200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    [10, 20, 0, 0, 0, 0],
+    [0, 30, 0, 40, 0, 0],
+    [0, 0, 50, 60, 70, 0],
+    [0, 0, 0, 0, 0, 80]
 ])
-
 example_matrix2 = np.array([
-    [10, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 30, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 50, 60, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 90, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 110, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 120, 0, 0, 0, 0, 0],
-    [0, 130, 0, 0, 0, 0, 0, 0, 0, 0, 140, 0, 0, 0, 0],
-    [150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 180, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 190],
-    [200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    [10, 20, 0, 0, 0, 0],
+    [0, 30, 0, 40, 0, 0],
+    [0, 0, 50, 60, 70, 0],
+    [0, 0, 0, 0, 0, 80]
 ])
 
 example1 = SparseMatrix(example_matrix1)
 example2 = SparseMatrix(example_matrix2)
 
-if example1.is_same(example2) == True:
+if example1.is_same(example2)==True: 
     print("\n" + 'Example 1 is the same as example 2')
-else:
+else: 
     print("\n" + 'Example 1 is not the same as example 2')
 print('\n')
-addedexample = example1.elementwise_add(example2)
-print("Addition of example 1 and example 2 =\n", addedexample.matrix)
+addedexample=example1.elementwise_add(example2)
+print("Addition of example 1 and example 2 =\n",addedexample.matrix)
 print('\n')
 
+
 example_matrix3 = np.array([
-    [10, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 30, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 50, 60, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 90, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 110, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 120, 0, 0, 0, 0, 0],
-    [0, 130, 0, 0, 0, 0, 0, 0, 0, 0, 140, 0, 0, 0, 0],
-    [150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 180, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 190],
-    [200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    [10, 20, 0, 0, 0, 0],
+    [0, 30, 0, 40, 0, 0],
+    [0, 0, 50, 60, 70, 0],
+    [0, 0, 0, 0, 0, 80]
 ])
 
 example3 = SparseMatrix(example_matrix3)
 
+example3.set_element(0,2,25)
+
+print(example3.matrix)
+
 example_matrix4 = np.array([
-    [10, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 30, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 50, 60, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 90, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 110, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 120, 0, 0, 0, 0, 0],
-    [0, 130, 0, 0, 0, 0, 0, 0, 0, 0, 140, 0, 0, 0, 0],
-    [150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 180, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 190],
-    [200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    [10, 20, 0, 0, 0, 0],
+    [0, 30, 0, 40, 0, 0],
+    [0, 0, 50, 60, 70, 0], 
+    [0, 0, 0, 0, 0, 80]
 ])
 
 example4 = SparseMatrix(example_matrix4)
 
-vector = np.array([10, 20, 9, 8, 7, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+vector = np.array([10, 20, 9, 8, 7, 8])
 
-multexample = example1.vector_multiplication(vector)
-print("Multiplication of matrix and vector =", multexample)
-if example3.is_same(example4) == True:
+multexample=example3.vector_multiplication(vector)
+print("Multiplication of matrix and vector =",multexample)
+
+if example3.is_same(example4)==True: 
     print("\n" + 'Example 3 is the same as example 4')
-else:
+else: 
     print("\n" + 'Example 3 is not the same as example 4')
 print('\n')
 
 # Task 10
-# Given array
-data = np.array([
-    [10, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 30, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 50, 60, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 90, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 110, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 120, 0, 0, 0, 0, 0],
-    [0, 130, 0, 0, 0, 0, 0, 0, 0, 0, 140, 0, 0, 0, 0],
-    [150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 180, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 190],
-    [200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-])
-
-# Create instances of your custom sparse matrix class and scipy.sparse.csr_matrix
-my_sparse_matrix = SparseMatrix(data)
-scipy_sparse_matrix = lil_matrix(data)
+# uses example matrix with 10000 rows of zeros
+# Create instances of custom sparse matrix class and scipy.sparse
+my_sparse_matrix = SparseMatrix(example_matrix)
+scipy_sparse_matrix = csr_matrix(example_matrix)
 
 # Benchmarking
-num_iterations = 1000
+num_iterations = 100
 
 # Benchmark insertion
+
 start_time = time.time()
 for _ in range(num_iterations):
-    my_sparse_matrix.set_element(0, 2, 25)
-    end_time = time.time()
+    my_sparse_matrix.set_element(0,2,25)
+end_time = time.time()
 print("Custom Insertion Time:", end_time - start_time)
 
 start_time = time.time()
 for _ in range(num_iterations):
-    scipy_sparse_matrix[0, 2] = 25
-    end_time = time.time()
+    scipy_sparse_matrix[0,2]=25
+end_time = time.time()
 print("SciPy Insertion Time:", end_time - start_time)
 
 # Benchmark matrix summation
 start_time = time.time()
 for _ in range(num_iterations):
-    my_sparse_matrix.elementwise_add(example2)
-    end_time = time.time()
+    my_sparse_matrix.elementwise_add(my_sparse_matrix)
+end_time = time.time()
 print("Custom Summation Time:", end_time - start_time)
 
 start_time = time.time()
 for _ in range(num_iterations):
-    scipy_sparse_matrix.__add__(example2)
-    end_time = time.time()
+    scipy_sparse_matrix.__add__(my_sparse_matrix)
+end_time = time.time()
 print("SciPy Summation Time:", end_time - start_time)
 
 # Benchmark matrix-vector multiplication
-vector = np.random.rand(data.shape[1])
+vector = np.random.rand(example_matrix.shape[1])
 start_time = time.time()
 for _ in range(num_iterations):
     my_sparse_matrix.vector_multiplication(vector)
-    end_time = time.time()
+end_time = time.time()
 print("Custom Multiplication Time:", end_time - start_time)
-# print(vector)
-# print(my_sparse_matrix.vector_multiplication(vector))
+#print(vector)
+#print(my_sparse_matrix.vector_multiplication(vector))
 start_time = time.time()
 for _ in range(num_iterations):
     scipy_sparse_matrix._mul_vector(vector)
-    end_time = time.time()
+end_time = time.time()
 print("SciPy Multiplication Time:", end_time - start_time)
